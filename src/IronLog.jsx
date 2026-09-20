@@ -86,6 +86,31 @@ const BREATH = {
   "Single-Arm Cable Triceps Extension": { in: "Let cable rise", out: "Extend arm down" },
 };
 
+const EXERCISE_PRESETS = {
+  Day1: [
+    { group: "Chest", name: "Flat Barbell Bench Press" },
+    { group: "Chest", name: "Incline Barbell Bench Press" },
+    { group: "Chest", name: "Decline Barbell Bench Press" },
+    { group: "Chest", name: "Flat Dumbbell Press" },
+    { group: "Chest", name: "Incline Dumbbell Press" },
+    { group: "Chest", name: "Dips (Chest-Focused)" },
+    { group: "Chest", name: "Push-Ups" },
+    { group: "Chest", name: "Landmine Press" },
+    { group: "Chest", name: "Smith Machine Bench Press" },
+    { group: "Chest", name: "Machine Chest Press" },
+    { group: "Chest", name: "Hammer Strength Press" },
+    { group: "Chest", name: "Flat Dumbbell Fly" },
+    { group: "Chest", name: "Incline Dumbbell Fly" },
+    { group: "Chest", name: "Cable Fly (Low-to-High)" },
+    { group: "Chest", name: "Cable Fly (High-to-Low)" },
+    { group: "Chest", name: "Cable Fly (Mid)" },
+    { group: "Chest", name: "Pec Deck / Machine Fly" },
+    { group: "Chest", name: "Cable Crossover" },
+    { group: "Chest", name: "Svend Press" },
+    { group: "Chest", name: "Dumbbell Pullover" },
+  ],
+};
+
 const TAGS = {
   W: { label: "Warm up", dot: "bg-amber-500", desc: "Lighter warm-up set - excluded from PRs and volume." },
   D: { label: "Drop set", dot: "bg-violet-500", desc: "Reduced-weight set performed right after reaching failure." },
@@ -720,6 +745,8 @@ function DayOverview({ day, data, lastPerformedForDay, onStart, infoFor, setInfo
       {isAddingHere ? (
         <ExerciseForm
           initial={formFor.editing}
+          presets={EXERCISE_PRESETS[day] || []}
+          existingNames={new Set(data.exercises.map((e) => e.name))}
           onCancel={() => setFormFor(null)}
           onSave={(obj) => {
             saveExercise(day, obj, formFor.editing?.id);
@@ -739,14 +766,20 @@ function DayOverview({ day, data, lastPerformedForDay, onStart, infoFor, setInfo
   );
 }
 
-function ExerciseForm({ initial, onCancel, onSave }) {
+function ExerciseForm({ initial, presets = [], existingNames = new Set(), onCancel, onSave }) {
   const [group, setGroup] = useState(initial?.group || "");
   const [name, setName] = useState(initial?.name || "");
   const [sets, setSets] = useState(initial ? setCountOf(initial) : 4);
   const [breathIn, setBreathIn] = useState(initial?.breathIn || "");
   const [breathOut, setBreathOut] = useState(initial?.breathOut || "");
 
+  const availablePresets = presets.filter((p) => !existingNames.has(p.name));
   const canSave = group.trim() && name.trim() && sets > 0;
+
+  const pickPreset = (p) => {
+    setName(p.name);
+    setGroup(p.group);
+  };
 
   return (
     <div className="bg-stone-900 border border-stone-800 rounded-xl p-4 space-y-3">
@@ -756,6 +789,26 @@ function ExerciseForm({ initial, onCancel, onSave }) {
           <X size={16} />
         </button>
       </div>
+
+      {!initial && availablePresets.length > 0 && (
+        <div>
+          <div className="text-stone-500 text-xs mb-1.5">Quick Pick</div>
+          <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-stone-800 bg-stone-950 p-2">
+            {availablePresets.map((p) => (
+              <button
+                key={p.name}
+                onClick={() => pickPreset(p)}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm flex items-center justify-between ${
+                  name === p.name ? "bg-orange-800 text-white" : "bg-stone-900 text-stone-300 active:bg-stone-800"
+                }`}
+              >
+                <span>{p.name}</span>
+                <span className="text-xs text-stone-500">{p.group}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Field label="Body Part" placeholder="e.g. Chest" value={group} onChange={setGroup} />
       <Field label="Exercise Name" placeholder="e.g. Incline Dumbbell Press" value={name} onChange={setName} />
